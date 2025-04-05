@@ -31,8 +31,12 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: |
+        run: | 
           pip install pandas openpyxl openai
+
+      - name: Install dependencies
+        run: |
+         pip install pandas openpyxl openai PyGithub
 
       - name: Run AI Fix Script
         env:
