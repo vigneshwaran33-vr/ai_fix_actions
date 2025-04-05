@@ -107,13 +107,13 @@ def patch_function_in_file(file_path, original_func, fixed_func):
 # ==== 🔀 GIT BRANCH, COMMIT & PUSH ====
 def commit_and_push_change(filename, function_name):
     feature_branch = f"fix/{function_name}"
+    github_token = os.getenv("GH_TOKEN")
+    repo_url = f"https://x-access-token:{github_token}@github.com/vigneshwaran33-vr/Buggycode.git"
+
+    subprocess.run(["git", "-C", SOURCE_DIR, "remote", "set-url", "origin", repo_url], check=True)
 
     subprocess.run(["git", "-C", SOURCE_DIR, "config", "user.email", "vigneshwaranr053@gmail.com"], check=True)
     subprocess.run(["git", "-C", SOURCE_DIR, "config", "user.name", "vigneshwaran33-vr"], check=True)
-
-    github_token = os.getenv("GH_TOKEN")
-    repo_url = f"https://x-access-token:{github_token}@github.com/vigneshwaran33-vr/Buggycode.git"
-    subprocess.run(["git", "-C", SOURCE_DIR, "remote", "set-url", "origin", repo_url], check=True)
 
     subprocess.run(["git", "-C", SOURCE_DIR, "checkout", "-b", feature_branch], check=True)
     subprocess.run(["git", "-C", SOURCE_DIR, "add", filename], check=True)
