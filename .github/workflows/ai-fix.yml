@@ -3,6 +3,9 @@ name: AI Fix from Coverity
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write 
+
 jobs:
   fix-code:
     runs-on: ubuntu-latest
