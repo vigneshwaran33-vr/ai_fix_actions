@@ -1,41 +1,46 @@
 import os
 import openpyxl
 import subprocess
+import difflib
 from openai import AzureOpenAI
 
-# ---- ENVIRONMENT VARIABLES ----
+# ==== 🔧 CONFIG ====
+SOURCE_REPO_URL = "https://github.com/vigneshwaran33-vr/Buggycode.git"
+SOURCE_DIR = "Buggycode"
+EXCEL_REPO_URL = "https://github.com/vigneshwaran33-vr/coverityxl.git"
+EXCEL_DIR = "coverityxl"
+EXCEL_PATH = os.path.join(EXCEL_DIR, "coverity_scan.xlsx")
+
+# ==== 🤖 AZURE OPENAI CLIENT ====
 client = AzureOpenAI(
     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
     api_key=os.getenv("AZURE_OPENAI_API_KEY"),
     api_version="2024-05-01-preview",
 )
 
-# ---- SAFE GIT CLONE (skip if already cloned) ----
+# ==== ✅ SAFE GIT CLONE ====
 def safe_clone(repo_url, dir_name):
     if not os.path.exists(dir_name):
         subprocess.run(["git", "clone", repo_url, dir_name], check=True)
     else:
         print(f"📂 Directory '{dir_name}' already exists, skipping clone.")
 
-safe_clone("https://github.com/vigneshwaran33-vr/Buggycode.git", "Buggycode")
-safe_clone("https://github.com/vigneshwaran33-vr/coverityxl.git", "coverityxl")
+# ==== 📥 LOAD COVERITY EXCEL ====
+def load_issues_from_excel():
+    wb = openpyxl.load_workbook(EXCEL_PATH)
+    sheet = wb.active
+    issues = []
+    for row in sheet.iter_rows(min_row=2, values_only=True):
+        function, issue, filename = row
+        if issue and function and filename:
+            issues.append({
+                "issue": issue.strip(),
+                "function": function.strip(),
+                "filename": filename.strip()
+            })
+    return issues
 
-# ---- READ EXCEL FOR ISSUES ----
-excel_path = "coverityxl/coverity_scan.xlsx"
-wb = openpyxl.load_workbook(excel_path)
-sheet = wb.active
-
-issues = []
-for row in sheet.iter_rows(min_row=2, values_only=True):
-    function, issue, filename = row
-    if issue and function and filename:
-        issues.append({
-            "issue": issue.strip(),
-            "function": function.strip(),
-            "filename": filename.strip()
-        })
-
-# ---- FUNCTION EXTRACTOR ----
+# ==== 🔍 FUNCTION EXTRACTOR ====
 def extract_function_from_file(file_path, function_name):
     with open(file_path, 'r') as f:
         lines = f.readlines()
@@ -56,17 +61,11 @@ def extract_function_from_file(file_path, function_name):
 
     return ''.join(func_lines)
 
-# ---- MAIN LOGIC: JUST PROMPT + PRINT ----
-for item in issues:
-    cpp_path = os.path.join("Buggycode", item['filename'])
-    buggy_func = extract_function_from_file(cpp_path, item['function'])
-
-    print(f"\n🔍 Prompting OpenAI to fix function: **{item['function']}**")
-    print(f"Issue: {item['issue']}")
-
+# ==== 🧠 ASK AZURE OPENAI ====
+def get_ai_fix(buggy_func, issue_desc):
     chat_prompt = [
         {"role": "system", "content": "You are an AI assistant that helps review and fix C++ code without comment."},
-        {"role": "user", "content": f"Fix the following C++ function based on the issue: {item['issue']}\n```cpp\n{buggy_func}\n```"}
+        {"role": "user", "content": f"Fix the following C++ function based on the issue: {issue_desc}\n```cpp\n{buggy_func}\n```"}
     ]
 
     response = client.chat.completions.create(
@@ -76,12 +75,74 @@ for item in issues:
         temperature=0.5
     )
 
-    ai_reply = response.choices[0].message.content.strip()
+    return response.choices[0].message.content.strip()
 
-    print("\n--- 🐛 Original Buggy Function ---")
-    print(buggy_func)
+# ==== 🧩 PATCH FILE WITH DIFFLIB ====
+def patch_function_in_file(file_path, original_func, fixed_func):
+    with open(file_path, 'r') as f:
+        lines = f.readlines()
 
-    print("\n--- 🤖 AI Suggested Fix ---")
-    print(ai_reply)
+    original_lines = original_func.splitlines(keepends=True)
+    fixed_lines = fixed_func.splitlines(keepends=True)
 
-print("\n✅ Done! Only printed AI fixes — no files were written or PRs created.")
+    orig_str = ''.join(original_lines)
+    start_idx = None
+    for i in range(len(lines)):
+        if ''.join(lines[i:i + len(original_lines)]) == orig_str:
+            start_idx = i
+            break
+
+    if start_idx is None:
+        print("❌ Failed to locate function in file.")
+        return False
+
+    lines[start_idx:start_idx + len(original_lines)] = fixed_lines
+
+    with open(file_path, 'w') as f:
+        f.writelines(lines)
+
+    print("✅ Function patched in file.")
+    return True
+
+# ==== 🔀 GIT BRANCH, COMMIT & PUSH ====
+def commit_and_push_change(filename, function_name):
+    feature_branch = f"fix/{function_name}"
+
+    subprocess.run(["git", "-C", SOURCE_DIR, "checkout", "-b", feature_branch], check=True)
+    subprocess.run(["git", "-C", SOURCE_DIR, "add", filename], check=True)
+    subprocess.run(["git", "-C", SOURCE_DIR, "commit", "-m", f"Fix Coverity issue in {function_name}"], check=True)
+    subprocess.run(["git", "-C", SOURCE_DIR, "push", "-u", "origin", feature_branch], check=True)
+
+    print(f"🚀 Pushed changes to branch '{feature_branch}'")
+
+# ==== 🚀 MAIN ====
+def main():
+    safe_clone(SOURCE_REPO_URL, SOURCE_DIR)
+    safe_clone(EXCEL_REPO_URL, EXCEL_DIR)
+
+    issues = load_issues_from_excel()
+
+    for item in issues:
+        cpp_path = os.path.join(SOURCE_DIR, item['filename'])
+        buggy_func = extract_function_from_file(cpp_path, item['function'])
+
+        print(f"\n🔍 Prompting OpenAI to fix function: **{item['function']}**")
+        print(f"Issue: {item['issue']}")
+
+        ai_reply = get_ai_fix(buggy_func, item['issue'])
+
+        print("\n--- 🐛 Original Buggy Function ---")
+        print(buggy_func)
+
+        print("\n--- 🤖 AI Suggested Fix ---")
+        print(ai_reply)
+
+        # Patch and commit
+        updated = patch_function_in_file(cpp_path, buggy_func, ai_reply)
+        if updated:
+            commit_and_push_change(item['filename'], item['function'])
+
+    print("\n✅ Done! All functions processed.")
+
+if __name__ == "__main__":
+    main()
