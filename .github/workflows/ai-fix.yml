@@ -1,0 +1,38 @@
+name: AI Fix from Coverity
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix-code:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Buggycode repo
+        uses: actions/checkout@v4
+        with:
+          repository: vigneshwaran33-vr/Buggycode
+          path: Buggycode
+
+      - name: Checkout Coverity Excel repo
+        uses: actions/checkout@v4
+        with:
+          repository: vigneshwaran33-vr/coverityxl
+          path: coverityxl
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install pandas openpyxl openai
+
+      - name: Run AI Fix Script
+        env:
+          AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          AZURE_OPENAI_DEPLOYMENT_NAME: ${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: python .github/scripts/ai_fix.py
