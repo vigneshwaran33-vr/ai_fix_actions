@@ -108,6 +108,9 @@ def patch_function_in_file(file_path, original_func, fixed_func):
 def commit_and_push_change(filename, function_name):
     feature_branch = f"fix/{function_name}"
 
+    subprocess.run(["git", "-C", SOURCE_DIR, "config", "user.email", "vigneshwaranr053@gmail.com"], check=True)
+    subprocess.run(["git", "-C", SOURCE_DIR, "config", "user.name", "vigneshwaran33-vr"], check=True)
+
     subprocess.run(["git", "-C", SOURCE_DIR, "checkout", "-b", feature_branch], check=True)
     subprocess.run(["git", "-C", SOURCE_DIR, "add", filename], check=True)
     subprocess.run(["git", "-C", SOURCE_DIR, "commit", "-m", f"Fix Coverity issue in {function_name}"], check=True)
