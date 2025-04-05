@@ -27,7 +27,7 @@ sheet = wb.active
 
 issues = []
 for row in sheet.iter_rows(min_row=2, values_only=True):
-    issue, function, filename = row
+    function, issue, filename = row
     if issue and function and filename:
         issues.append({
             "issue": issue.strip(),
