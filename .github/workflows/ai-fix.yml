@@ -32,11 +32,7 @@ jobs:
 
       - name: Install dependencies
         run: | 
-          pip install pandas openpyxl openai
-
-      - name: Install dependencies
-        run: |
-         pip install pandas openpyxl openai PyGithub
+          pip install pandas openpyxl openai PyGithub
 
       - name: Run AI Fix Script
         env:
