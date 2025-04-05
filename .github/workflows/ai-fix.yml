@@ -8,6 +8,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout Workflow Repo
+        uses: actions/checkout@v4
+        with:
+          path: workflow
+          
       - name: Checkout Buggycode repo
         uses: actions/checkout@v4
         with:
