@@ -43,4 +43,5 @@ jobs:
           AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
           AZURE_OPENAI_DEPLOYMENT_NAME: ${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN_FG: ${{ secrets.GH_TOKEN_FG }}
         run: python workflow/.github/scripts/ai_fix.py
