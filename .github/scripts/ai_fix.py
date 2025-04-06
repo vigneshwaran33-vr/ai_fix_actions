@@ -119,6 +119,13 @@ def commit_and_push_change(filename, function_name):
     subprocess.run(["git", "-C", SOURCE_DIR, "checkout", "-b", feature_branch], check=True)
     subprocess.run(["git", "-C", SOURCE_DIR, "add", filename], check=True)
     subprocess.run(["git", "-C", SOURCE_DIR, "commit", "-m", f"Fix Coverity issue in {function_name}"], check=True)
+
+    subprocess.run([
+    "git", "-C", SOURCE_DIR,
+    "remote", "set-url", "origin",
+    f"https://x-access-token:{os.environ['GH_TOKEN_FG']}@github.com/vigneshwaran33-vr/Buggycode.git"
+    ], check=True)
+    
     subprocess.run(["git", "-C", SOURCE_DIR, "push", "-u", "origin", feature_branch], check=True)
 
     print(f"🚀 Pushed changes to branch '{feature_branch}'")
