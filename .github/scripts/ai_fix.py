@@ -107,7 +107,7 @@ def patch_function_in_file(file_path, original_func, fixed_func):
 # ==== 🔀 GIT BRANCH, COMMIT & PUSH ====
 def commit_and_push_change(filename, function_name):
     feature_branch = f"fix/{function_name}"
-    github_token = os.getenv("GH_TOKEN_FG")
+    github_token = os.getenv("GH_TOKEN")
     repo_url = f"https://x-access-token:{github_token}@github.com/vigneshwaran33-vr/Buggycode.git"
 
     subprocess.run(["git", "-C", SOURCE_DIR, "remote", "set-url", "origin", repo_url], check=True)
@@ -118,14 +118,11 @@ def commit_and_push_change(filename, function_name):
 
     subprocess.run(["git", "-C", SOURCE_DIR, "checkout", "-b", feature_branch], check=True)
     subprocess.run(["git", "-C", SOURCE_DIR, "add", filename], check=True)
-    subprocess.run(["git", "-C", SOURCE_DIR, "commit", "-m", f"Fix Coverity issue in {function_name}"], check=True)
 
-    subprocess.run([
-    "git", "-C", SOURCE_DIR,
-    "remote", "set-url", "origin",
-    f"https://x-access-token:{os.environ['GH_TOKEN_FG']}@github.com/vigneshwaran33-vr/Buggycode.git"
-    ], check=True)
+    print("\n--- 📝 Changes to be committed ---")
+    subprocess.run(["git", "-C", SOURCE_DIR, "diff", "--cached"], check=True)
     
+    subprocess.run(["git", "-C", SOURCE_DIR, "commit", "-m", f"Fix Coverity issue in {function_name}"], check=True)
     subprocess.run(["git", "-C", SOURCE_DIR, "push", "-u", "origin", feature_branch], check=True)
 
     print(f"🚀 Pushed changes to branch '{feature_branch}'")
