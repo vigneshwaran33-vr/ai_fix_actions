@@ -116,9 +116,6 @@ def commit_and_push_change(filename, function_name):
     subprocess.run(["git", "-C", SOURCE_DIR, "config", "user.email", "vigneshwaranr053@gmail.com"], check=True)
     subprocess.run(["git", "-C", SOURCE_DIR, "config", "user.name", "vigneshwaran33-vr"], check=True)
 
-    git config --global --get user.name
-    git config --global --get user.email
-
     subprocess.run(["git", "-C", SOURCE_DIR, "checkout", "-b", feature_branch], check=True)
     subprocess.run(["git", "-C", SOURCE_DIR, "add", filename], check=True)
     subprocess.run(["git", "-C", SOURCE_DIR, "commit", "-m", f"Fix Coverity issue in {function_name}"], check=True)
